@@ -1,13 +1,13 @@
 import type { OdesliResult, Platform } from "./odesli";
 
-const PLATFORM_DISPLAY: { platform: Platform; label: string; emoji: string }[] = [
-  { platform: "spotify", label: "Spotify", emoji: ":spotify:" },
-  { platform: "appleMusic", label: "Apple Music", emoji: ":apple-music:" },
-  { platform: "youtubeMusic", label: "YouTube Music", emoji: ":youtube-music:" },
-  { platform: "amazonMusic", label: "Amazon Music", emoji: ":amazon-music:" },
-  { platform: "tidal", label: "Tidal", emoji: ":tidal:" },
-  { platform: "deezer", label: "Deezer", emoji: ":deezer:" },
-  { platform: "soundcloud", label: "SoundCloud", emoji: ":soundcloud:" },
+const PLATFORM_DISPLAY: { platform: Platform; label: string }[] = [
+  { platform: "spotify", label: "Spotify" },
+  { platform: "appleMusic", label: "Apple Music" },
+  { platform: "youtubeMusic", label: "YouTube Music" },
+  { platform: "amazonMusic", label: "Amazon Music" },
+  { platform: "tidal", label: "Tidal" },
+  { platform: "deezer", label: "Deezer" },
+  { platform: "soundcloud", label: "SoundCloud" },
 ];
 
 export interface SlackBlock {
@@ -39,9 +39,9 @@ export function formatBlocks(result: OdesliResult): SlackBlock[] {
   // Platform link buttons
   const buttons = PLATFORM_DISPLAY
     .filter(({ platform }) => result.linksByPlatform[platform])
-    .map(({ platform, label, emoji }) => ({
+    .map(({ platform, label }) => ({
       type: "button",
-      text: { type: "plain_text", text: `${emoji} ${label}`, emoji: true },
+      text: { type: "plain_text", text: label },
       url: result.linksByPlatform[platform],
       action_id: `open_${platform}`,
     }));
