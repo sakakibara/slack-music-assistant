@@ -1,6 +1,7 @@
 import { detectMusicUrls } from "./urlDetector";
 import { fetchLinks } from "./odesli";
-import { formatMessage } from "./formatter";
+import { formatBlocks, formatFallbackText } from "./formatter";
+import type { SlackBlock } from "./formatter";
 
 export async function verifySlackSignature(
   request: Request,
@@ -96,8 +97,9 @@ export async function handleMessageEvent(
       continue;
     }
 
-    const message = formatMessage(result);
-    await postThreadReply(botToken, event.channel, event.ts, message);
+    const blocks = formatBlocks(result);
+    const fallback = formatFallbackText(result);
+    await postThreadReply(botToken, event.channel, event.ts, fallback, blocks);
   }
 }
 
@@ -106,6 +108,7 @@ async function postThreadReply(
   channel: string,
   threadTs: string,
   text: string,
+  blocks: SlackBlock[],
 ): Promise<void> {
   let response: Response;
   try {
@@ -119,6 +122,7 @@ async function postThreadReply(
         channel,
         thread_ts: threadTs,
         text,
+        blocks,
         unfurl_links: false,
         unfurl_media: false,
       }),

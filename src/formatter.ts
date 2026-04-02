@@ -1,37 +1,60 @@
 import type { OdesliResult, Platform } from "./odesli";
 
-const PLATFORM_DISPLAY: { platform: Platform; label: string }[] = [
-  { platform: "spotify", label: "Spotify" },
-  { platform: "appleMusic", label: "Apple Music" },
-  { platform: "youtubeMusic", label: "YouTube Music" },
-  { platform: "amazonMusic", label: "Amazon Music" },
-  { platform: "tidal", label: "Tidal" },
-  { platform: "deezer", label: "Deezer" },
-  { platform: "soundcloud", label: "SoundCloud" },
+const PLATFORM_DISPLAY: { platform: Platform; label: string; emoji: string }[] = [
+  { platform: "spotify", label: "Spotify", emoji: ":spotify:" },
+  { platform: "appleMusic", label: "Apple Music", emoji: ":apple-music:" },
+  { platform: "youtubeMusic", label: "YouTube Music", emoji: ":youtube-music:" },
+  { platform: "amazonMusic", label: "Amazon Music", emoji: ":amazon-music:" },
+  { platform: "tidal", label: "Tidal", emoji: ":tidal:" },
+  { platform: "deezer", label: "Deezer", emoji: ":deezer:" },
+  { platform: "soundcloud", label: "SoundCloud", emoji: ":soundcloud:" },
 ];
 
-export function formatMessage(result: OdesliResult): string {
-  const lines: string[] = [];
+export interface SlackBlock {
+  type: string;
+  [key: string]: unknown;
+}
 
-  // Title + artist
-  if (result.title) {
-    const titlePart = `*${result.title}*`;
-    const artistPart = result.artistName ? ` - ${result.artistName}` : "";
-    lines.push(`:musical_note: ${titlePart}${artistPart}`);
-    lines.push("");
+export function formatBlocks(result: OdesliResult): SlackBlock[] {
+  const blocks: SlackBlock[] = [];
+
+  // Title + artist section with optional thumbnail
+  const titlePart = result.title ? `*${result.title}*` : "Unknown Track";
+  const artistPart = result.artistName ? ` — ${result.artistName}` : "";
+  const headerText = `:musical_note: ${titlePart}${artistPart}`;
+
+  const headerBlock: SlackBlock = {
+    type: "section",
+    text: { type: "mrkdwn", text: headerText },
+  };
+  if (result.thumbnailUrl) {
+    headerBlock.accessory = {
+      type: "image",
+      image_url: result.thumbnailUrl,
+      alt_text: result.title ?? "Album art",
+    };
+  }
+  blocks.push(headerBlock);
+
+  // Platform link buttons
+  const buttons = PLATFORM_DISPLAY
+    .filter(({ platform }) => result.linksByPlatform[platform])
+    .map(({ platform, label, emoji }) => ({
+      type: "button",
+      text: { type: "plain_text", text: `${emoji} ${label}`, emoji: true },
+      url: result.linksByPlatform[platform],
+      action_id: `open_${platform}`,
+    }));
+
+  if (buttons.length > 0) {
+    blocks.push({ type: "actions", elements: buttons });
   }
 
-  // Platform links
-  for (const { platform, label } of PLATFORM_DISPLAY) {
-    const url = result.linksByPlatform[platform];
-    if (url) {
-      lines.push(`• <${url}|${label}>`);
-    }
-  }
+  return blocks;
+}
 
-  // song.link page
-  lines.push("");
-  lines.push(`:link: <${result.pageUrl}|song.link で開く>`);
-
-  return lines.join("\n");
+export function formatFallbackText(result: OdesliResult): string {
+  const titlePart = result.title ? `*${result.title}*` : "Unknown Track";
+  const artistPart = result.artistName ? ` — ${result.artistName}` : "";
+  return `${titlePart}${artistPart}`;
 }
