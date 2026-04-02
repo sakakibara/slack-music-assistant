@@ -84,17 +84,17 @@ describe("formatBlocks", () => {
       title: "Test",
       pageUrl: "https://song.link/test",
       linksByPlatform: {
-        deezer: "https://deezer.com/test",
+        soundcloud: "https://soundcloud.com/test",
         spotify: "https://spotify.com/test",
-        tidal: "https://tidal.com/test",
+        amazonMusic: "https://music.amazon.com/test",
       },
     };
 
     const blocks = formatBlocks(result);
     const elements = (blocks[1].elements as { text: { text: string } }[]);
     expect(elements[0].text.text).toContain("Spotify");
-    expect(elements[1].text.text).toContain("Tidal");
-    expect(elements[2].text.text).toContain("Deezer");
+    expect(elements[1].text.text).toContain("Amazon Music");
+    expect(elements[2].text.text).toContain("SoundCloud");
   });
 });
 

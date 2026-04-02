@@ -1,5 +1,7 @@
 import { detectMusicUrls } from "./urlDetector";
 import { fetchLinks } from "./odesli";
+import { searchSpotifyTrack } from "./spotify";
+import { searchYouTubeTrack } from "./youtube";
 import { formatBlocks, formatFallbackText } from "./formatter";
 import type { SlackBlock } from "./formatter";
 
@@ -71,10 +73,21 @@ export function parseEventPayload(body: string): SlackEventPayload | null {
   }
 }
 
+export interface SpotifyCredentials {
+  clientId: string;
+  clientSecret: string;
+}
+
+export interface FallbackApis {
+  spotify?: SpotifyCredentials;
+  youtubeApiKey?: string;
+}
+
 export async function handleMessageEvent(
   event: SlackMessageEvent,
   botToken: string,
   userCountry?: string,
+  fallbacks?: FallbackApis,
 ): Promise<void> {
   // Ignore bot messages to prevent infinite loops
   if (event.bot_id || event.subtype) {
@@ -95,6 +108,28 @@ export async function handleMessageEvent(
     const result = await fetchLinks(url, userCountry);
     if (!result) {
       continue;
+    }
+
+    // Fallback searches for missing platforms
+    if (result.title && fallbacks) {
+      const fallbackPromises: Promise<void>[] = [];
+
+      if (!result.linksByPlatform.spotify && fallbacks.spotify) {
+        const { clientId, clientSecret } = fallbacks.spotify;
+        fallbackPromises.push(
+          searchSpotifyTrack(result.title, result.artistName ?? "", clientId, clientSecret)
+            .then((url) => { if (url) result.linksByPlatform.spotify = url; }),
+        );
+      }
+
+      if (!result.linksByPlatform.youtube && !result.linksByPlatform.youtubeMusic && fallbacks.youtubeApiKey) {
+        fallbackPromises.push(
+          searchYouTubeTrack(result.title, result.artistName ?? "", fallbacks.youtubeApiKey)
+            .then((url) => { if (url) result.linksByPlatform.youtube = url; }),
+        );
+      }
+
+      await Promise.all(fallbackPromises);
     }
 
     const blocks = formatBlocks(result);

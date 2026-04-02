@@ -4,9 +4,8 @@ const PLATFORM_DISPLAY: { platform: Platform; label: string }[] = [
   { platform: "spotify", label: "Spotify" },
   { platform: "appleMusic", label: "Apple Music" },
   { platform: "youtubeMusic", label: "YouTube Music" },
+  { platform: "youtube", label: "YouTube" },
   { platform: "amazonMusic", label: "Amazon Music" },
-  { platform: "tidal", label: "Tidal" },
-  { platform: "deezer", label: "Deezer" },
   { platform: "soundcloud", label: "SoundCloud" },
 ];
 

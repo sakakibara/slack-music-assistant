@@ -6,8 +6,6 @@ export type Platform =
   | "youtubeMusic"
   | "youtube"
   | "amazonMusic"
-  | "tidal"
-  | "deezer"
   | "soundcloud";
 
 interface OdesliEntity {

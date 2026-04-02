@@ -8,6 +8,9 @@ export interface Env {
   SLACK_BOT_TOKEN: string;
   SLACK_SIGNING_SECRET: string;
   USER_COUNTRY?: string;
+  SPOTIFY_CLIENT_ID?: string;
+  SPOTIFY_CLIENT_SECRET?: string;
+  YOUTUBE_API_KEY?: string;
 }
 
 export default {
@@ -47,8 +50,14 @@ export default {
     // Handle event callbacks
     if (payload.type === "event_callback" && payload.event) {
       if (payload.event.type === "message") {
+        const fallbacks = {
+          spotify: env.SPOTIFY_CLIENT_ID && env.SPOTIFY_CLIENT_SECRET
+            ? { clientId: env.SPOTIFY_CLIENT_ID, clientSecret: env.SPOTIFY_CLIENT_SECRET }
+            : undefined,
+          youtubeApiKey: env.YOUTUBE_API_KEY,
+        };
         ctx.waitUntil(
-          handleMessageEvent(payload.event, env.SLACK_BOT_TOKEN, env.USER_COUNTRY),
+          handleMessageEvent(payload.event, env.SLACK_BOT_TOKEN, env.USER_COUNTRY, fallbacks),
         );
       }
     }
