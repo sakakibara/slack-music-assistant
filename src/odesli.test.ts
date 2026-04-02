@@ -69,12 +69,52 @@ describe("fetchLinks", () => {
   it("returns null on HTTP error", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn().mockResolvedValue({ ok: false, status: 404 }),
+      vi.fn().mockResolvedValue({ ok: false, status: 404, headers: new Headers() }),
     );
 
     const result = await fetchLinks("https://open.spotify.com/track/bad");
     expect(result).toBeNull();
 
+    vi.unstubAllGlobals();
+  });
+
+  it("retries on 429 and succeeds", async () => {
+    vi.useFakeTimers();
+    const mockFetch = vi.fn()
+      .mockResolvedValueOnce({ ok: false, status: 429, headers: new Headers() })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(MOCK_API_RESPONSE),
+      });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const promise = fetchLinks("https://open.spotify.com/track/abc");
+    await vi.advanceTimersByTimeAsync(5_000);
+    const result = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(result).not.toBeNull();
+    expect(result!.title).toBe("Test Song");
+
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("gives up after max retries on persistent 429", async () => {
+    vi.useFakeTimers();
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: false, status: 429, headers: new Headers(),
+    });
+    vi.stubGlobal("fetch", mockFetch);
+
+    const promise = fetchLinks("https://open.spotify.com/track/abc");
+    await vi.advanceTimersByTimeAsync(30_000);
+    const result = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(4); // 1 initial + 3 retries
+    expect(result).toBeNull();
+
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 

@@ -1,3 +1,5 @@
 name = "slack-music-assistant"
 main = "src/index.ts"
 compatibility_date = "2025-01-01"
+workers_dev = true
+preview_urls = false
