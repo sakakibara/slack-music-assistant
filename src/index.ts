@@ -7,6 +7,7 @@ import {
 export interface Env {
   SLACK_BOT_TOKEN: string;
   SLACK_SIGNING_SECRET: string;
+  USER_COUNTRY?: string;
 }
 
 export default {
@@ -32,6 +33,9 @@ export default {
 
     const body = await request.text();
     const payload = parseEventPayload(body);
+    if (!payload) {
+      return new Response("Bad Request", { status: 400 });
+    }
 
     // Handle Slack URL verification challenge
     if (payload.type === "url_verification") {
@@ -44,7 +48,7 @@ export default {
     if (payload.type === "event_callback" && payload.event) {
       if (payload.event.type === "message") {
         ctx.waitUntil(
-          handleMessageEvent(payload.event, env.SLACK_BOT_TOKEN),
+          handleMessageEvent(payload.event, env.SLACK_BOT_TOKEN, env.USER_COUNTRY),
         );
       }
     }

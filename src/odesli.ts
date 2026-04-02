@@ -36,12 +36,23 @@ export interface OdesliResult {
   linksByPlatform: Partial<Record<Platform, string>>;
 }
 
-export async function fetchLinks(url: string): Promise<OdesliResult | null> {
+export async function fetchLinks(
+  url: string,
+  userCountry = "JP",
+): Promise<OdesliResult | null> {
   const apiUrl = new URL(ODESLI_API_URL);
   apiUrl.searchParams.set("url", url);
-  apiUrl.searchParams.set("userCountry", "JP");
+  apiUrl.searchParams.set("userCountry", userCountry);
 
-  const response = await fetch(apiUrl.toString());
+  let response: Response;
+  try {
+    response = await fetch(apiUrl.toString(), {
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    console.error(`Odesli API request failed for ${url}:`, err);
+    return null;
+  }
   if (!response.ok) {
     console.error(`Odesli API error: ${response.status} for ${url}`);
     return null;
@@ -49,8 +60,15 @@ export async function fetchLinks(url: string): Promise<OdesliResult | null> {
 
   const data = (await response.json()) as OdesliApiResponse;
 
+  if (!data.pageUrl || !data.linksByPlatform) {
+    console.error(`Odesli API returned unexpected data for ${url}`);
+    return null;
+  }
+
   // Extract metadata from the primary entity
-  const primaryEntity = data.entitiesByUniqueId[data.entityUniqueId];
+  const primaryEntity = data.entityUniqueId
+    ? data.entitiesByUniqueId?.[data.entityUniqueId]
+    : undefined;
 
   // Flatten linksByPlatform to just URLs
   const linksByPlatform: Partial<Record<Platform, string>> = {};

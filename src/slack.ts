@@ -61,13 +61,19 @@ interface SlackEventPayload {
   event?: SlackMessageEvent;
 }
 
-export function parseEventPayload(body: string): SlackEventPayload {
-  return JSON.parse(body) as SlackEventPayload;
+export function parseEventPayload(body: string): SlackEventPayload | null {
+  try {
+    return JSON.parse(body) as SlackEventPayload;
+  } catch {
+    console.error("Failed to parse Slack event payload");
+    return null;
+  }
 }
 
 export async function handleMessageEvent(
   event: SlackMessageEvent,
   botToken: string,
+  userCountry?: string,
 ): Promise<void> {
   // Ignore bot messages to prevent infinite loops
   if (event.bot_id || event.subtype) {
@@ -85,7 +91,7 @@ export async function handleMessageEvent(
 
   // Process each detected URL
   for (const url of urls) {
-    const result = await fetchLinks(url);
+    const result = await fetchLinks(url, userCountry);
     if (!result) {
       continue;
     }
@@ -101,20 +107,27 @@ async function postThreadReply(
   threadTs: string,
   text: string,
 ): Promise<void> {
-  const response = await fetch("https://slack.com/api/chat.postMessage", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json; charset=utf-8",
-      Authorization: `Bearer ${botToken}`,
-    },
-    body: JSON.stringify({
-      channel,
-      thread_ts: threadTs,
-      text,
-      unfurl_links: false,
-      unfurl_media: false,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch("https://slack.com/api/chat.postMessage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        Authorization: `Bearer ${botToken}`,
+      },
+      body: JSON.stringify({
+        channel,
+        thread_ts: threadTs,
+        text,
+        unfurl_links: false,
+        unfurl_media: false,
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (err) {
+    console.error("Slack API request failed:", err);
+    return;
+  }
 
   if (!response.ok) {
     console.error(`Slack API HTTP error: ${response.status}`);
