@@ -19,13 +19,16 @@ const MUSIC_URL_PATTERNS: RegExp[] = [
 ];
 
 export function detectMusicUrls(text: string): string[] {
+  // Unwrap Slack's <url|label> format to just the URL
+  const unwrapped = text.replace(/<([^|>]+)\|[^>]*>/g, "$1");
+
   const urls = new Set<string>();
 
   for (const pattern of MUSIC_URL_PATTERNS) {
     // Reset lastIndex for global regex
     pattern.lastIndex = 0;
     let match: RegExpExecArray | null;
-    while ((match = pattern.exec(text)) !== null) {
+    while ((match = pattern.exec(unwrapped)) !== null) {
       // Remove trailing punctuation that's not part of the URL
       const url = match[0].replace(/[),.:;!?]+$/, "");
       urls.add(url);

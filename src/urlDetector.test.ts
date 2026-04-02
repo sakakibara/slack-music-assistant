@@ -93,6 +93,20 @@ describe("detectMusicUrls", () => {
     expect(detectMusicUrls("https://google.com")).toEqual([]);
   });
 
+  it("extracts URL from Slack link format <url|label>", () => {
+    const text = "<https://open.spotify.com/track/abc123|https://open.spotify.com/track/abc123>";
+    expect(detectMusicUrls(text)).toEqual([
+      "https://open.spotify.com/track/abc123",
+    ]);
+  });
+
+  it("extracts URL from Slack link with display text", () => {
+    const text = "<https://music.apple.com/jp/album/test/123?i=456|Apple Music link>";
+    expect(detectMusicUrls(text)).toEqual([
+      "https://music.apple.com/jp/album/test/123?i=456",
+    ]);
+  });
+
   it("detects multiple platforms in one message", () => {
     const text =
       "Spotify: https://open.spotify.com/track/abc123 Apple: https://music.apple.com/us/album/test/999";
